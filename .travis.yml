@@ -13,7 +13,7 @@ install:
   - sudo pip install $ANSIBLE_VERSION
 script:
   - ansible --version
-  - export ANSIBLE_ROLES_PATH="../ansible"
+  - export ANSIBLE_ROLES_PATH="./ansible"
 #  - echo localhost > inventory
   - ansible-playbook -i hosts --syntax-check docker.yml
   - ansible-playbook -i hosts --connection=local --sudo -vvvv docker.yml
