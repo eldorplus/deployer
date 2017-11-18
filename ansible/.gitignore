@@ -1,0 +1,5 @@
+### Vagrant ###
+.vagrant/
+*.log
+env/
+venv/
