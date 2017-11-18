@@ -65,7 +65,15 @@ echo
 docker network create $NETWORK
 
 # 5. Download the latest version of nginx.tmpl
-curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > templates/nginx.tmpl
+if [ ! -f ./templates/nginx.tmpl ]; then
+
+  if [ ! -d ./templates ]; then
+    mkdir -p templates
+  fi
+
+  #wget https://github.com/jwilder/nginx-proxy/raw/master/nginx.tmpl -O ./templates/nginx.tmpl
+  curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > templates/nginx.tmpl
+fi
 
 # 6. Start proxy
 docker-compose -f docker-compose-with-nginx.yml up -d --build --remove-orphans

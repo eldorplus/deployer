@@ -46,4 +46,4 @@ WORKDIR /var/www
 # make web server connect to this port
 EXPOSE 9000
 
-CMD ["php-fpm"]
+CMD ["phpfpm"]
