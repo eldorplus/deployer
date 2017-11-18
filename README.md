@@ -94,10 +94,10 @@ docker run -d -e VIRTUAL_HOST=your.domain.com \
 
 ## Testing your proxy with scripts preconfigured 
 
-1. Run the script `test.sh` informing your domain already configured in your DNS to point out to your server as follow:
+1. Run the script `test` informing your domain already configured in your DNS to point out to your server as follow:
 
 ```bash
-# ./test.sh your.domain.com
+# ./test your.domain.com
 ```
 
 or simply run:
@@ -108,10 +108,10 @@ or simply run:
 
 Access your browser with your domain!
 
-To stop and remove your test container run our `stop_test.sh` script:
+To stop and remove your test container run our `stop_test` script:
 
 ```bash
-# ./stop_test.sh
+# ./stop_test
 ```
 
 Or simply run:
