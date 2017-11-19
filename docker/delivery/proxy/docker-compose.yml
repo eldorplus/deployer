@@ -1,22 +1,23 @@
 version: '3'
 
 services:
-  nginx:
-    build: nginx
-    links:
-      - phpfpm
-    labels:
-        com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-    container_name: ${NGINX_WEB}
-    restart: unless-stopped
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
     ports:
-      - "${IP}:80:80"
-      - "${IP}:443:443"
+      - ${IP}:80:80
+      - ${IP}:443:443
+    environment:
+      - DEFAULT_HOST=evin-record.fr
     volumes:
       - ${NGINX_FILES_PATH}/conf.d:/etc/nginx/conf.d
-      - ${NGINX_FILES_PATH}/vhost.d:/etc/nginx/vhost.d
+      - ./vhost.d:/etc/nginx/vhost.d:rw
       - ${NGINX_FILES_PATH}/html:/usr/share/nginx/html
       - ${NGINX_FILES_PATH}/certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - default
 
   nginx-gen:
     image: jwilder/docker-gen
@@ -25,51 +26,34 @@ services:
     restart: unless-stopped
     volumes:
       - ${NGINX_FILES_PATH}/conf.d:/etc/nginx/conf.d
-      - ${NGINX_FILES_PATH}/vhost.d:/etc/nginx/vhost.d
+      - ./vhost.d:/etc/nginx/vhost.d
       - ${NGINX_FILES_PATH}/html:/usr/share/nginx/html
       - ${NGINX_FILES_PATH}/certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      - ./templates/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro
+      - ./templates/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:rw
+    networks:
+      - default
 
   nginx-letsencrypt:
+    #image: alastaircoote/docker-letsencrypt-nginx-proxy-companion
     image: jrcs/letsencrypt-nginx-proxy-companion
     container_name: ${LETS_ENCRYPT}
     restart: unless-stopped
-    depends_on: [nginx-gen]
+    depends_on:
+      - nginx-proxy
+      #- nginx-gen
+    restart: unless-stopped
     volumes:
       - ${NGINX_FILES_PATH}/conf.d:/etc/nginx/conf.d
-      - ${NGINX_FILES_PATH}/vhost.d:/etc/nginx/vhost.d
+      - ./vhost.d:/etc/nginx/vhost.d
       - ${NGINX_FILES_PATH}/html:/usr/share/nginx/html
       - ${NGINX_FILES_PATH}/certs:/etc/nginx/certs:rw
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       NGINX_DOCKER_GEN_CONTAINER: ${DOCKER_GEN}
       NGINX_PROXY_CONTAINER: ${NGINX_WEB}
-
-  phpfpm:
-    build: fpm
-    links:
-      - mariadb
-      #- memcached
-    ports:
-      - "9000:9000"
-    #volumes:
-      #- data/php:/home/http
-
-  mariadb:
-    build: mariadb
-    ports:
-      - "3306:3306"
-    #volumes:
-      #- log/mariadb:/var/log/mysql
-      #- data/mariadb:/var/lib/mysql
-    environment:
-      DB_ADMIN_PASS: pass
-
-  #memcached:
-    #build: memcached
-    #ports:
-      #- "11211:11211"
+    networks:
+      - default
 
 networks:
   default:

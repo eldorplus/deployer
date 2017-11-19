@@ -1,0 +1,99 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_volume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: root
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - redis_volume:/data
+
+  phpfpm:
+    build: ../../build/fpm
+    #image: laravel:php-fpm
+    container_name: phpfpm
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - redis
+    links:
+      - mysql
+      - redis
+    #ports:
+      #- 9000:9000
+    volumes:
+      - ${NGINX_WEB_APP_PATH}:/var/www/html:rw
+    environment:
+      REDIS_HOST: redis
+      MYSQL_HOST: mysql
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      VIRTUAL_HOST: evin-record.fr
+      LETSENCRYPT_HOST: evin-record.fr
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+
+  nginx:
+    #build: ../../build/nginx
+    image: nginx:alpine
+    depends_on:
+      - phpfpm
+      - mysql
+      - composer
+    links:
+      - phpfpm
+      - mysql
+      - composer
+    container_name: ${NGINX_WEB}
+    restart: unless-stopped
+    ports:
+      - "${IP}:80:80"
+      - "${IP}:443:443"
+    volumes:
+      - ./default:/etc/nginx/conf.d/default.conf
+      #- ${NGINX_FILES_PATH}/conf.d:/etc/nginx/conf.d
+      #- ${NGINX_FILES_PATH}/vhost.d:/etc/nginx/vhost.d
+      - ${NGINX_WEB_APP_PATH}:/var/www/html/:ro
+      #- ${NGINX_FILES_PATH}/certs:/etc/nginx/certs:ro
+    networks:
+      - default
+    environment:
+      VIRTUAL_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_HOST: evin-record.fr
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+
+  composer:
+    image: composer/composer:php7
+    command: install
+    volumes:
+      - ${NGINX_WEB_APP_PATH}:/app
+
+  node:
+    image: node:8.1
+    command: bash -c "cd app && yarn install && npm run docker-up"
+    volumes:
+      - ${NGINX_WEB_APP_PATH}:/app
+
+networks:
+  default:
+    external:
+      name: ${NETWORK}
+
+volumes:
+  mysql_volume:
+    driver: local
+  redis_volume:
+      driver: local

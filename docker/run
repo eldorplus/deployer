@@ -5,77 +5,131 @@
 # Source: https://github.com/evertramos/docker-compose-letsencrypt-nginx-proxy-companion
 #
 
-# 1. Check if .env file exists
-if [ -e .env ]; then
-    source .env
-else
-    echo "Please set up your .env file before starting your enviornment."
+function info() {
+  echo -e "\033[32mINFO: \033[0m  $@" >/dev/stdout
+}
+
+function error() {
+  echo -e "\033[31mERROR: \033[0m $*" >/dev/stderr
+}
+
+function check_file_env_exists() {
+  if [ ! -e .env ]; then
+    error "Please set up your .env file before starting your enviornment."
+    cp .env.sample .env
     exit 1
-fi
+  fi
+}
 
-
-# 2. Passowrd for Admin User
-
-#   2.1 Check if a password was set up in the .env file
-if [ -z "$ADMIN_PASSWORD" ]; then
-    echo "You must set up a password in your '.env' file."
+function run_docker(){
+  docker info 2>&1 >/dev/null
+  if [ $? -ne 0 ];then
+    clear
+    echo "=========================="
+    echo "=== Please Run Docker ===="
+    echo "=========================="
     exit 1
-fi
+  fi
+}
 
-#   2.2 Check if passowrd was the same as sample file
-if [ $ADMIN_PASSWORD = "your_admin_password" ]; then
-    echo
-    echo "#-----------------------------------------------------------"
-    echo "#"
-    echo "# CAREFUL!"
-    echo "#"
-    echo "# You are using the same passowrd of our sample."
-    echo "# Please change it AS SOON AS POSSÍBLE!"
-    echo "#"
-    echo "#-----------------------------------------------------------"
-    echo
-fi
+function prompt_yn () {
+    while true; do
+        read -p "$1 " answer
+        case ${answer:0:1} in
+            y|Y ) return 0;;
+            n|N ) return 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
 
-#   2.3 Generate the encrypted password
-ENCRYPTED_PASSWORD=$(docker run --rm httpd:2.4-alpine htpasswd -nbB admin $ADMIN_PASSWORD | cut -d ":" -f 2)
-
-#   2.4 Delete old ENCRYPTED_PASSWORD
-sed -i '/ENCRYPTED_PASSWORD/d' .env
-
-#   2.4 Send passowrd to .env file
-echo "ENCRYPTED_PASSWORD=$ENCRYPTED_PASSWORD" >> .env
-
-# 3. Start Portainer container
-docker-compose -f docker-compose-with-passowrd.yml up -d --remove-orphans
-
-# Domains message
-echo
-echo "#-----------------------------------------------------------"
-echo "#"
-echo "# The WebProxy take a few moments to get the SSL Certificates"
-echo "#"
-echo "# Please check your browser to see if it is running, use your"
-echo "# domain(s): "
-echo "# $DOMAINS"
-echo "#"
-echo "#-----------------------------------------------------------"
-echo
-
-# 4. Create docker network
-docker network create $NETWORK
-
-# 5. Download the latest version of nginx.tmpl
-if [ ! -f ./templates/nginx.tmpl ]; then
-
-  if [ ! -d ./templates ]; then
-    mkdir -p templates
+function password_admin() {
+  #   2.1 Check if a password was set up in the .env file
+  if [ -z "$ADMIN_PASSWORD" ]; then
+      error "You must set up a password in your '.env' file."
+      exit 1
   fi
 
-  #wget https://github.com/jwilder/nginx-proxy/raw/master/nginx.tmpl -O ./templates/nginx.tmpl
-  curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > templates/nginx.tmpl
-fi
+  #   2.2 Check if passowrd was the same as sample file
+  if [ $ADMIN_PASSWORD = "your_admin_password" ]; then
+    if prompt_yn "Do you want to change your current password (y/n)?"; then
+      read -p  "Enter your Password: " password
+      echo $password
 
-# 6. Start proxy
-docker-compose -f docker-compose-with-nginx.yml up -d --build --remove-orphans
+      #   2.3 Generate the encrypted password
+      ENCRYPTED_PASSWORD=$(docker run --rm httpd:2.4-alpine htpasswd -nbB admin $ADMIN_PASSWORD | cut -d ":" -f 2)
+      #   2.4 Delete old ENCRYPTED_PASSWORD
+      sed -Ei '/ENCRYPTED_PASSWORD/d' .env
+      #   2.5 Send passowrd to .env file
+      echo "ENCRYPTED_PASSWORD=$ENCRYPTED_PASSWORD" >> .env
 
-exit 0
+      #   2.6 Start Portainer container
+      docker-compose -f docker-compose-with-passowrd.yml up -d --remove-orphans
+    else
+      echo
+      echo "#-----------------------------------------------------------"
+      echo "#"
+      echo "# CAREFUL!"
+      echo "#"
+      echo "# You are using the same passowrd of our sample."
+      echo "# Please change it AS SOON AS POSSIBLE!"
+      echo "#"
+      echo "#-----------------------------------------------------------"
+      echo
+
+      # 2.6 Start Portainer container
+      docker-compose -f docker-compose.yml up -d --remove-orphans
+    fi
+  fi
+}
+
+function setup_web_proxy() {
+  # Domains message
+  echo
+  echo "#-----------------------------------------------------------"
+  echo "#"
+  echo "# The WebProxy take a few moments to get the SSL Certificates"
+  echo "#"
+  echo "# Please check your browser to see if it is running, use your"
+  echo "# domain(s): "
+  echo "# $DOMAINS"
+  echo "#"
+  echo "#-----------------------------------------------------------"
+  echo
+
+  # 3. Create docker network
+  if [[ "$(docker network ls | grep $NETWORK 2> /dev/null)" == "" ]]; then
+    docker network create $NETWORK -d bridge
+  fi
+
+  # 4. Download the latest version of nginx.tmpl
+  if [ ! -f ./delivery/proxy/templates/nginx.tmpl ]; then
+
+    if [ ! -d ./delivery/proxy/templates ]; then
+      mkdir -p delivery/proxy/templates
+    fi
+    curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > delivery/proxy/templates/nginx.tmpl
+  fi
+
+  # 4. Start proxy
+  for d in `ls -d delivery/*`;
+  do
+    docker-compose -f $d/docker-compose.yml up -d --build --remove-orphans
+  done
+}
+
+
+function main() {
+  # 1. Check if .env file exists
+  check_file_env_exists
+  source .env
+
+  # 2. Passowrd for Admin User
+  password_admin
+
+  # 3. Configure proxy env
+  setup_web_proxy
+  exit 0
+}
+
+main

@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  mail:
+    image: tvial/docker-mailserver:latest
+    hostname: mail
+    domainname: evin-record.fr
+    container_name: mail
+    ports:
+      - "25:25"
+      - "143:143"
+      - "587:587"
+      - "993:993"
+    volumes:
+      - ./maildata/:/var/mail
+      - ./config/:/tmp/docker-mailserver/
+      - ${NGINX_FILES_PATH}/certs/mail.evin-record.fr.crt:/tmp/ssl/mail.evin-record.fr.crt:ro
+      - ${NGINX_FILES_PATH}/certs/mail.evin-record.fr.key:/tmp/ssl/mail.evin-record.fr.key:ro
+    environment:
+     - LETSENCRYPT_HOST=mail.evin-record.fr
+     - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+     - VIRTUAL_HOST=mail.evin-record.fr
+     - SSL_TYPE=manual
+     - SSL_CERT_PATH=/tmp/ssl/mail.evin-record.fr.crt
+     - SSL_KEY_PATH=/tmp/ssl/mail.evin-record.fr.key
+    restart: always
