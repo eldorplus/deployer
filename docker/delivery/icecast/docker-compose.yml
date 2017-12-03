@@ -1,0 +1,17 @@
+version: '3'
+services:
+  debian:
+    build: .
+    ports:
+     - 8000:8000
+    networks:
+      lan:
+        ipv4_address: 172.10.0.10
+
+networks:
+  lan:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+       - subnet: 172.10.0.14/29

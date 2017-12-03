@@ -4,9 +4,9 @@ services:
   nginx-proxy:
     image: jwilder/nginx-proxy
     container_name: nginx-proxy
-    ports:
-      - ${IP}:80:80
-      - ${IP}:443:443
+    #ports:
+      #- ${IP}:80:80
+      #- ${IP}:443:443
     environment:
       - DEFAULT_HOST=evin-record.fr
     volumes:

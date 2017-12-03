@@ -1,6 +1,7 @@
 version: '3'
 
 services:
+### MySQL Container #########################################
   mysql:
     image: mysql:latest
     container_name: mysql
@@ -15,15 +16,16 @@ services:
       MYSQL_USER: root
       MYSQL_DATABASE: ${MYSQL_DATABASE}
 
+### Redis Container #########################################
   redis:
     image: redis:alpine
     container_name: redis
     volumes:
       - redis_volume:/data
 
+### PHP Container ###########################################
   phpfpm:
     build: ../../build/fpm
-    #image: laravel:php-fpm
     container_name: phpfpm
     restart: unless-stopped
     depends_on:
@@ -32,8 +34,8 @@ services:
     links:
       - mysql
       - redis
-    #ports:
-      #- 9000:9000
+    ports:
+      - 9000:9000
     volumes:
       - ${NGINX_WEB_APP_PATH}:/var/www/html:rw
     environment:
@@ -46,6 +48,7 @@ services:
       LETSENCRYPT_HOST: evin-record.fr
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
 
+### Nginx Server Container ##################################
   nginx:
     #build: ../../build/nginx
     image: nginx:alpine
@@ -75,12 +78,14 @@ services:
       LETSENCRYPT_HOST: evin-record.fr
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
 
+### Composer Container ######################################
   composer:
     image: composer/composer:php7
     command: install
     volumes:
       - ${NGINX_WEB_APP_PATH}:/app
 
+### Node js Container ########################################
   node:
     image: node:8.1
     command: bash -c "cd app && yarn install && npm run docker-up"

@@ -1,9 +1,7 @@
 #!/bin/bash
 
-#
-# This file should be used to prepare and run your WebProxy after set up your .env file
-# Source: https://github.com/evertramos/docker-compose-letsencrypt-nginx-proxy-companion
-#
+ARCH=`uname -m`
+OS=`uname -s`
 
 function info() {
   echo -e "\033[32mINFO: \033[0m  $@" >/dev/stdout
@@ -13,7 +11,7 @@ function error() {
   echo -e "\033[31mERROR: \033[0m $*" >/dev/stderr
 }
 
-function check_file_env_exists() {
+function env_status() {
   if [ ! -e .env ]; then
     error "Please set up your .env file before starting your enviornment."
     cp .env.sample .env
@@ -43,6 +41,10 @@ function prompt_yn () {
     done
 }
 
+function NOT_SUPPORT() {
+  print_error "Not Support ${OS} ${ARCH}\n"; exit 1
+}
+
 function password_admin() {
   #   2.1 Check if a password was set up in the .env file
   if [ -z "$ADMIN_PASSWORD" ]; then
@@ -53,8 +55,13 @@ function password_admin() {
   #   2.2 Check if passowrd was the same as sample file
   if [ $ADMIN_PASSWORD = "your_admin_password" ]; then
     if prompt_yn "Do you want to change your current password (y/n)?"; then
-      read -p  "Enter your Password: " password
-      echo $password
+      read -s -p  "Enter your Password: " ADMIN_PASSWORD
+
+      if [ ${OS} = "Darwin" ];then
+        sed -i "" "s/^ADMIN_PASSWORD.*/ADMIN_PASSWORD=${ADMIN_PASSWORD}/g" .env
+      else
+        sed -i "s/^ADMIN_PASSWORD.*/ADMIN_PASSWORD=${ADMIN_PASSWORD}/g" .env
+      fi
 
       #   2.3 Generate the encrypted password
       ENCRYPTED_PASSWORD=$(docker run --rm httpd:2.4-alpine htpasswd -nbB admin $ADMIN_PASSWORD | cut -d ":" -f 2)
@@ -80,6 +87,9 @@ function password_admin() {
       # 2.6 Start Portainer container
       docker-compose -f docker-compose.yml up -d --remove-orphans
     fi
+  else
+    #   2.6 Start Portainer container
+    docker-compose -f docker-compose-with-passowrd.yml up -d --remove-orphans
   fi
 }
 
@@ -120,8 +130,10 @@ function setup_web_proxy() {
 
 
 function main() {
+  run_docker
+  info "ARCH is ${OS} ${ARCH}\n"
   # 1. Check if .env file exists
-  check_file_env_exists
+  env_status
   source .env
 
   # 2. Passowrd for Admin User

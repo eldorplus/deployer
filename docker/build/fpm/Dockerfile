@@ -1,5 +1,4 @@
-#FROM php:7.1-fpm
-FROM laravel:php-fpm
+FROM php:7.1-fpm
 
 # updates
 RUN apt-get update && apt-get install -y libmcrypt-dev libicu-dev mysql-client libxml2-dev libssl-dev libpq-dev libbz2-dev libpng-dev \
@@ -49,13 +48,13 @@ RUN curl https://phar.phpunit.de/phpunit.phar -L > phpunit.phar \
 RUN apt-get update && apt-get -y install rsyslog
 
 # Change uid and gid of apache to docker user uid/gid
-#RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
+RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
 
 # mark volume/s as externally mounted
-VOLUME ["/var/www"]
+VOLUME ["/var/www/html"]
 
 # starting point
-WORKDIR /var/www
+WORKDIR /var/www/html
 
 # make web server connect to this port
 EXPOSE 9000

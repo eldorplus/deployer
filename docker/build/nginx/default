@@ -6,7 +6,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server ipv6only=on;
 
-    server_name localhost;
+    server_name _;
 
     error_log "/opt/bitnami/nginx/logs/myapp-error.log";
     access_log  "/opt/bitnami/nginx/logs/myapp-access.log";
