@@ -2,6 +2,9 @@ version: '3'
 services:
   debian:
     build: .
+    image: develop/icecast
+    container_name: icecast
+    restart: unless-stopped
     ports:
      - 8000:8000
     networks:

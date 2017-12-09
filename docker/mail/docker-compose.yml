@@ -12,10 +12,10 @@ services:
       - "587:587"
       - "993:993"
     volumes:
-      - ./maildata/:/var/mail
-      - ./config/:/tmp/docker-mailserver/
-      - ${NGINX_FILES_PATH}/certs/mail.evin-record.fr.crt:/tmp/ssl/mail.evin-record.fr.crt:ro
-      - ${NGINX_FILES_PATH}/certs/mail.evin-record.fr.key:/tmp/ssl/mail.evin-record.fr.key:ro
+      - ${SERVER_PATH}/mail/data/:/var/mail
+      - ${SERVER_PATH}/mail/config/:/tmp/docker-mailserver/
+      - ${SERVER_PATH}/mail/nginx/certs/mail.evin-record.fr.crt:/tmp/ssl/mail.evin-record.fr.crt:ro
+      - ${SERVER_PATH}/mail/nginx/certs/mail.evin-record.fr.key:/tmp/ssl/mail.evin-record.fr.key:ro
     environment:
      - LETSENCRYPT_HOST=mail.evin-record.fr
      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}

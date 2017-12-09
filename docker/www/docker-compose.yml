@@ -1,4 +1,4 @@
-version: '3'
+version: '2.1'
 
 services:
 ### MySQL Container #########################################
@@ -8,24 +8,28 @@ services:
     restart: always
     ports:
       - 3306:3306
+    networks:
+      - backend
     volumes:
       - mysql_volume:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_USER: root
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-secret}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      MYSQL_USER: homestead
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-homestead}
 
 ### Redis Container #########################################
   redis:
     image: redis:alpine
     container_name: redis
+    networks:
+      - backend
     volumes:
       - redis_volume:/data
 
 ### PHP Container ###########################################
   phpfpm:
-    build: ../../build/fpm
+    build: fpm
     container_name: phpfpm
     restart: unless-stopped
     depends_on:
@@ -41,17 +45,14 @@ services:
     environment:
       REDIS_HOST: redis
       MYSQL_HOST: mysql
-      DB_NAME: ${MYSQL_DATABASE}
-      DB_DATABASE: ${MYSQL_DATABASE}
-      DB_PASSWORD: ${MYSQL_PASSWORD}
-      VIRTUAL_HOST: evin-record.fr
-      LETSENCRYPT_HOST: evin-record.fr
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+      DB_NAME: ${MYSQL_DATABASE:-homestead}
+      DB_DATABASE: ${MYSQL_DATABASE:-homestead}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
 
 ### Nginx Server Container ##################################
-  nginx:
-    #build: ../../build/nginx
-    image: nginx:alpine
+  app:
+    build: app
+    image: develop:app
     depends_on:
       - phpfpm
       - mysql
@@ -60,27 +61,29 @@ services:
       - phpfpm
       - mysql
       - composer
-    container_name: ${NGINX_WEB}
+    container_name: app
+    working_dir: /var/www/html
     restart: unless-stopped
-    ports:
-      - "${IP}:80:80"
-      - "${IP}:443:443"
     volumes:
-      - ./default:/etc/nginx/conf.d/default.conf
+      #- ./default:/etc/nginx/conf.d/default.conf
       #- ${NGINX_FILES_PATH}/conf.d:/etc/nginx/conf.d
       #- ${NGINX_FILES_PATH}/vhost.d:/etc/nginx/vhost.d
       - ${NGINX_WEB_APP_PATH}:/var/www/html/:ro
       #- ${NGINX_FILES_PATH}/certs:/etc/nginx/certs:ro
     networks:
-      - default
+      - backend
+      - frontend
     environment:
-      VIRTUAL_HOST: ${VIRTUAL_HOST}
-      LETSENCRYPT_HOST: evin-record.fr
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+      #VIRTUAL_NETWORK: nginx-proxy
+      #VIRTUAL_PORT: 3000
+      VIRTUAL_HOST: ${VIRTUAL_HOST:-evin-record.dev}
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-evin-record.dev}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@evin-record.dev}
 
 ### Composer Container ######################################
   composer:
     image: composer/composer:php7
+    container_name: composer
     command: install
     volumes:
       - ${NGINX_WEB_APP_PATH}:/app
@@ -88,14 +91,24 @@ services:
 ### Node js Container ########################################
   node:
     image: node:8.1
+    container_name: node
     command: bash -c "cd app && yarn install && npm run docker-up"
     volumes:
       - ${NGINX_WEB_APP_PATH}:/app
 
 networks:
-  default:
+  frontend:
     external:
       name: ${NETWORK}
+    driver: bridge
+  backend:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+        - subnet: 2001:3984:3989::/64
 
 volumes:
   mysql_volume:

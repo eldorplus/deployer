@@ -3,6 +3,9 @@
 ARCH=`uname -m`
 OS=`uname -s`
 
+export SERVER_PATH="$(pwd)/.server"
+export ROOT_PATH="$(pwd)"
+
 function info() {
   echo -e "\033[32mINFO: \033[0m  $@" >/dev/stdout
 }
@@ -113,16 +116,16 @@ function setup_web_proxy() {
   fi
 
   # 4. Download the latest version of nginx.tmpl
-  if [ ! -f ./delivery/proxy/templates/nginx.tmpl ]; then
+  if [ ! -f ./docker/proxy/templates/nginx.tmpl ]; then
 
-    if [ ! -d ./delivery/proxy/templates ]; then
-      mkdir -p delivery/proxy/templates
+    if [ ! -d ./docker/proxy/templates ]; then
+      mkdir -p docker/proxy/templates
     fi
-    curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > delivery/proxy/templates/nginx.tmpl
+    curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > docker/proxy/templates/nginx.tmpl
   fi
 
   # 4. Start proxy
-  for d in `ls -d delivery/*`;
+  for d in `ls -d docker/*`;
   do
     docker-compose -f $d/docker-compose.yml up -d --build --remove-orphans
   done

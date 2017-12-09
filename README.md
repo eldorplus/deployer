@@ -25,7 +25,7 @@ In order to use this compose file (docker-compose.yml) you must have:
 1. Clone this repository:
 
 ```bash
-git clone https://github.com/eldorplus/deployer.git && cd deployer/docker
+git clone https://github.com/eldorplus/deployer.git && cd deployer
 ```
 
 2. Make a copy of our `.env.sample` and rename it to `.env`:
