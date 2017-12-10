@@ -1,4 +1,5 @@
 version: '3'
+
 services:
   debian:
     build: .
@@ -7,14 +8,17 @@ services:
     restart: unless-stopped
     ports:
      - 8000:8000
+    environment:
+      VIRTUAL_NETWORK: ${NETWORK}
+      VIRTUAL_PORT: 8000
+      VIRTUAL_HOST: stream.evin-record.dev
+      LETSENCRYPT_HOST: stream.evin-record.dev
+      LETSENCRYPT_EMAIL: admin@evin-record.dev
     networks:
-      lan:
-        ipv4_address: 172.10.0.10
+      - default
+
 
 networks:
-  lan:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-       - subnet: 172.10.0.14/29
+  default:
+    external:
+      name: ${NETWORK}

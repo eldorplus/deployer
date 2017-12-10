@@ -4,23 +4,30 @@ services:
   mail:
     image: tvial/docker-mailserver:latest
     hostname: mail
-    domainname: evin-record.fr
+    domainname: evin-records.dev
     container_name: mail
     ports:
-      - "25:25"
-      - "143:143"
-      - "587:587"
-      - "993:993"
+      - 25:25
+      - 143:143
+      - 587:587
+      - 993:993
     volumes:
       - ${SERVER_PATH}/mail/data/:/var/mail
       - ${SERVER_PATH}/mail/config/:/tmp/docker-mailserver/
-      - ${SERVER_PATH}/mail/nginx/certs/mail.evin-record.fr.crt:/tmp/ssl/mail.evin-record.fr.crt:ro
-      - ${SERVER_PATH}/mail/nginx/certs/mail.evin-record.fr.key:/tmp/ssl/mail.evin-record.fr.key:ro
+      - ${SERVER_PATH}/mail/nginx/certs/mail.evin-records.dev.crt:/tmp/ssl/mail.evin-records.dev.crt:ro
+      - ${SERVER_PATH}/mail/nginx/certs/mail.evin-records.dev.key:/tmp/ssl/mail.evin-records.dev.key:ro
     environment:
-     - LETSENCRYPT_HOST=mail.evin-record.fr
+     - LETSENCRYPT_HOST=mail.evin-record.dev
      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
-     - VIRTUAL_HOST=mail.evin-record.fr
+     - VIRTUAL_HOST=mail.evin-record.dev
      - SSL_TYPE=manual
-     - SSL_CERT_PATH=/tmp/ssl/mail.evin-record.fr.crt
-     - SSL_KEY_PATH=/tmp/ssl/mail.evin-record.fr.key
+     - SSL_CERT_PATH=/tmp/ssl/mail.evin-records.dev.crt
+     - SSL_KEY_PATH=/tmp/ssl/mail.evin-records.dev.key
     restart: always
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    external:
+      name: ${NETWORK}

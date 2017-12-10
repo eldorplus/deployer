@@ -1,10 +1,17 @@
 #!/bin/bash
 
+export SERVER_PATH="$(pwd)/.server"
+export ROOT_PATH="$(pwd)"
 #
-# Script to stop your Portainer
+# Script to stop your all container
 #
 # Uses the admin password specified in the .env file
 
-docker-compose -f docker-compose-with-passowrd.yml down
+docker-compose -f docker-compose.yml down
+
+for d in `ls -d docker/*`;
+do
+	docker-compose -f $d/docker-compose.yml down
+done
 
 exit 0

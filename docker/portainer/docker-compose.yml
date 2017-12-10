@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  portainer:
+    container_name: ${CONTAINER_NAME}
+    restart: unless-stopped
+    image: portainer/portainer
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+    volumes:
+      - portainer_volume:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      VIRTUAL_NETWORK: ${NETWORK}
+      VIRTUAL_PORT: 9000
+      VIRTUAL_HOST: portainer.evin-record.dev
+      LETSENCRYPT_HOST: portainer.evin-record.dev
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+    networks:
+      - default
+
+volumes:
+  portainer_volume:
+    driver: local
+
+networks:
+  default:
+    external:
+      name: ${NETWORK}

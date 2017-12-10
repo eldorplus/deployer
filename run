@@ -116,13 +116,15 @@ function setup_web_proxy() {
   fi
 
   # 4. Download the latest version of nginx.tmpl
-  if [ ! -f ./docker/proxy/templates/nginx.tmpl ]; then
+  if [ ! -f ./.server/templates/nginx.tmpl ]; then
 
-    if [ ! -d ./docker/proxy/templates ]; then
-      mkdir -p docker/proxy/templates
+    if [ ! -d ./.server/templates ]; then
+      mkdir -p ./.server/templates
     fi
-    curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > docker/proxy/templates/nginx.tmpl
+    curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > ./.server/templates/nginx.tmpl
   fi
+
+  docker-compose -f docker-compose.yml up -d --remove-orphans
 
   # 4. Start proxy
   for d in `ls -d docker/*`;
@@ -140,7 +142,7 @@ function main() {
   source .env
 
   # 2. Passowrd for Admin User
-  password_admin
+  #password_admin
 
   # 3. Configure proxy env
   setup_web_proxy
